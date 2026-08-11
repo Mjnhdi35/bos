@@ -1,15 +1,31 @@
 {
   "name": "bos",
-  "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
+  "version": "0.1.0",
   "author": "",
   "type": "commonjs",
   "main": "index.js",
+  "private": true,
+  "description": "Business Operating System for Smoothie Studio",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.2.0",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
   }
 }
