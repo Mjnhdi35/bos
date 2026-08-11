@@ -10,25 +10,41 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix --max-warnings=0"
+    ]
   },
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@eslint/js": "^10.0.1",
     "@types/express": "^5.0.6",
     "@types/node": "^26.2.0",
     "@types/supertest": "^7.2.1",
     "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.8.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
     "supertest": "^7.2.2",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0",
     "vitest": "^4.1.10"
   }
 }
