@@ -1,9 +1,8 @@
 {
   "name": "bos",
   "version": "0.1.0",
-  "author": "",
+  "author": "Smoothie-Mango",
   "type": "commonjs",
-  "main": "index.js",
   "private": true,
   "description": "Business Operating System for Smoothie Studio",
   "license": "UNLICENSED",
@@ -16,16 +15,20 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^26.2.0",
+    "@types/supertest": "^7.2.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "supertest": "^7.2.2",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
-  },
-  "dependencies": {
-    "express": "^5.2.1"
   }
 }
