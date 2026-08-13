@@ -1,0 +1,13 @@
+{
+  "entities": [
+    {
+      "name": "audit_log",
+      "version": 1,
+      "fields": [
+        { "name": "actor", "type": "string", "required": true },
+        { "name": "action", "type": "string", "required": true },
+        { "name": "payload", "type": "json", "required": false }
+      ]
+    }
+  ]
+}
