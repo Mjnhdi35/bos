@@ -8,9 +8,7 @@ module.exports = [
   {
     languageOptions: {
       parserOptions: {
-        projectService: {
-          allowDefaultProject: ["test/*.test.ts"],
-        },
+        projectService: true,
         tsconfigRootDir: __dirname,
       },
     },
@@ -21,6 +19,38 @@ module.exports = [
     files: ["src/**/*.ts", "test/**/*.ts"],
     rules: {
       "no-console": "error",
+      "no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
+  {
+    files: ["test/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/unbound-method": "off",
+      "@typescript-eslint/restrict-template-expressions": [
+        "error",
+        {
+          allowNumber: true,
+          allowBoolean: true,
+        },
+      ],
     },
   },
 ];
