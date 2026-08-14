@@ -14,6 +14,30 @@ jobs:
     name: Verify (typecheck + lint + test + build)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: bos
+          POSTGRES_PASSWORD: bos-ci-password
+          POSTGRES_DB: bos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bos -d bos"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_NAME: bos
+      DB_USER: bos
+      DB_PASSWORD: bos-ci-password
+      JWT_SECRET: ci-only-jwt-secret-must-be-at-least-32-chars
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 30d
     steps:
       - uses: actions/checkout@v4
 
@@ -24,6 +48,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run database migrations
+        run: npm run db:migrate
 
       - name: Typecheck
         run: npm run typecheck
