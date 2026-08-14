@@ -2,7 +2,6 @@ export * from "./domain/field-type";
 export * from "./domain/field-def";
 export * from "./domain/definition";
 export * from "./domain/metadata";
-export * from "./domain/errors";
 export * from "./metadata-repository";
 export * from "./schema-materializer";
 export * from "./entity-data-store";

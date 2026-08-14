@@ -1,4 +1,5 @@
 import { type FieldDef, validateFieldDefs } from "./field-def";
+import { HttpError } from "../../shared/errors";
 
 export type EntityDefinition = {
   readonly name: string;
@@ -6,9 +7,10 @@ export type EntityDefinition = {
   readonly fields: readonly FieldDef[];
 };
 
-export class InvalidDefinitionError extends Error {
+export class InvalidDefinitionError extends HttpError {
   constructor(message: string) {
-    super(`Invalid definition: ${message}`);
+    super(400, "invalid_definition");
+    this.message = `Invalid definition: ${message}`;
     this.name = "InvalidDefinitionError";
   }
 }
@@ -27,7 +29,9 @@ export function validateEntityDefinition(input: unknown): EntityDefinition {
     throw new InvalidDefinitionError("name must be non-empty string");
   }
   if (name.length > MAX_ENTITY_NAME_LENGTH) {
-    throw new InvalidDefinitionError(`name exceeds ${String(MAX_ENTITY_NAME_LENGTH)} chars`);
+    throw new InvalidDefinitionError(
+      `name exceeds ${String(MAX_ENTITY_NAME_LENGTH)} chars`,
+    );
   }
   if (!ENTITY_NAME_RE.test(name)) {
     throw new InvalidDefinitionError(
@@ -36,7 +40,11 @@ export function validateEntityDefinition(input: unknown): EntityDefinition {
   }
 
   const version = obj.version;
-  if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
+  if (
+    typeof version !== "number" ||
+    !Number.isInteger(version) ||
+    version < 1
+  ) {
     throw new InvalidDefinitionError("version must be positive integer");
   }
 

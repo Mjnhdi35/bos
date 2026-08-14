@@ -1,6 +1,7 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import { logger } from "../../../../src/shared/logging/logger";
 import { db } from "../../../../src/infrastructure/database/knex";
+import { HttpError } from "../../../../src/shared/errors";
 import { createPlatformRouter } from "../../../../src/platform/routes";
 
 export function createPlatformTestApp(): Express {
@@ -14,6 +15,10 @@ export function createPlatformTestApp(): Express {
   );
   app.use("/platform", createPlatformRouter({ knex: db }));
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ error: err.code });
+      return;
+    }
     logger.error({ err: err.message, stack: err.stack }, "unhandled error");
     if (!res.headersSent) {
       res.status(500).json({ error: "internal_error" });

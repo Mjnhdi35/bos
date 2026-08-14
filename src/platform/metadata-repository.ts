@@ -18,11 +18,14 @@ type EntityRow = {
   updated_at: Date;
 };
 
-function rowToFields(raw: ReadonlyArray<Record<string, unknown>>): readonly FieldDef[] {
+function rowToFields(
+  raw: ReadonlyArray<Record<string, unknown>>,
+): readonly FieldDef[] {
   const out: FieldDef[] = [];
   for (const item of raw) {
     const type = item.type;
-    if (!isFieldType(type)) throw new Error(`Invalid field type in metadata: ${String(type)}`);
+    if (!isFieldType(type))
+      throw new Error(`Invalid field type in metadata: ${String(type)}`);
     const name = item.name;
     const required = item.required;
     if (typeof name !== "string" || typeof required !== "boolean") {
@@ -35,7 +38,9 @@ function rowToFields(raw: ReadonlyArray<Record<string, unknown>>): readonly Fiel
         out.push({
           ...base,
           type: "string",
-          ...(typeof item.maxLength === "number" ? { maxLength: item.maxLength } : {}),
+          ...(typeof item.maxLength === "number"
+            ? { maxLength: item.maxLength }
+            : {}),
         });
         break;
       case "text":
@@ -48,7 +53,9 @@ function rowToFields(raw: ReadonlyArray<Record<string, unknown>>): readonly Fiel
         out.push({
           ...base,
           type: "decimal",
-          ...(typeof item.precision === "number" ? { precision: item.precision } : {}),
+          ...(typeof item.precision === "number"
+            ? { precision: item.precision }
+            : {}),
           ...(typeof item.scale === "number" ? { scale: item.scale } : {}),
         });
         break;
@@ -73,7 +80,9 @@ function rowToFields(raw: ReadonlyArray<Record<string, unknown>>): readonly Fiel
           ...base,
           type: "enum",
           values,
-          ...(typeof item.maxLength === "number" ? { maxLength: item.maxLength } : {}),
+          ...(typeof item.maxLength === "number"
+            ? { maxLength: item.maxLength }
+            : {}),
         });
         break;
       }
@@ -123,7 +132,9 @@ export async function insertMetadata(
   return rowToMetadata(row);
 }
 
-export async function listMetadata(knex: Knex): Promise<readonly EntityMetadata[]> {
+export async function listMetadata(
+  knex: Knex,
+): Promise<readonly EntityMetadata[]> {
   const rows = await knex<EntityRow>("platform_entities")
     .orderBy("name", "asc")
     .orderBy("version", "desc");
@@ -160,9 +171,8 @@ export async function deleteMetadata(
 }
 
 export async function countMetadata(knex: Knex): Promise<number> {
-  const result = await knex<EntityRow>("platform_entities").count<{ count: string }[]>(
-    "*",
-  );
+  const result =
+    await knex<EntityRow>("platform_entities").count<{ count: string }[]>("*");
   const first = result[0];
   if (!first) return 0;
   return Number.parseInt(first.count, 10);

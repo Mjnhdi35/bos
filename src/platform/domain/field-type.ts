@@ -13,7 +13,10 @@ export const FIELD_TYPES = [
 export type FieldType = (typeof FIELD_TYPES)[number];
 
 export function isFieldType(value: unknown): value is FieldType {
-  return typeof value === "string" && (FIELD_TYPES as readonly string[]).includes(value);
+  return (
+    typeof value === "string" &&
+    (FIELD_TYPES as readonly string[]).includes(value)
+  );
 }
 
 export const ARRAY_INNER_TYPES = [

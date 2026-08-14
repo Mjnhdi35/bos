@@ -22,10 +22,7 @@ function arrayInnerPgType(t: ArrayInnerType): string {
   }
 }
 
-function applyColumn(
-  table: Knex.CreateTableBuilder,
-  fd: FieldDef,
-): void {
+function applyColumn(table: Knex.CreateTableBuilder, fd: FieldDef): void {
   switch (fd.type) {
     case "string": {
       const col = table.string(fd.name, fd.maxLength ?? 255);

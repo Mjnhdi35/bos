@@ -9,7 +9,8 @@ type Row = Record<string, unknown>;
 
 function rowToRecord(row: Row): EntityRecord {
   const id = row.id;
-  if (typeof id !== "string") throw new Error("entity record missing string id");
+  if (typeof id !== "string")
+    throw new Error("entity record missing string id");
   const rec: Row = { id };
   for (const [k, v] of Object.entries(row)) {
     if (k === "id") continue;
@@ -23,7 +24,9 @@ export async function insertRecord(
   table: string,
   input: Record<string, unknown>,
 ): Promise<EntityRecord> {
-  const rows = (await knex(table).insert({ ...input }).returning("*")) as readonly Row[];
+  const rows = (await knex(table)
+    .insert({ ...input })
+    .returning("*")) as readonly Row[];
   const row = rows[0];
   if (!row) throw new Error(`Insert into ${table} returned no row`);
   return rowToRecord(row);

@@ -1,4 +1,9 @@
-import { isArrayInnerType, isFieldType, type ArrayInnerType } from "./field-type";
+import {
+  isArrayInnerType,
+  isFieldType,
+  type ArrayInnerType,
+} from "./field-type";
+import { HttpError } from "../../shared/errors";
 
 export type BaseFieldDef = {
   readonly name: string;
@@ -61,9 +66,10 @@ export type FieldDef =
 export const MAX_FIELD_NAME_LENGTH = 64;
 const FIELD_NAME_RE = /^[a-z][a-z0-9_]*$/;
 
-export class InvalidFieldDefError extends Error {
+export class InvalidFieldDefError extends HttpError {
   constructor(message: string) {
-    super(`Invalid field definition: ${message}`);
+    super(400, "invalid_definition");
+    this.message = `Invalid field definition: ${message}`;
     this.name = "InvalidFieldDefError";
   }
 }
@@ -79,7 +85,9 @@ export function validateFieldDef(def: unknown): FieldDef {
     throw new InvalidFieldDefError("name must be non-empty string");
   }
   if (name.length > MAX_FIELD_NAME_LENGTH) {
-    throw new InvalidFieldDefError(`name exceeds ${String(MAX_FIELD_NAME_LENGTH)} chars`);
+    throw new InvalidFieldDefError(
+      `name exceeds ${String(MAX_FIELD_NAME_LENGTH)} chars`,
+    );
   }
   if (!FIELD_NAME_RE.test(name)) {
     throw new InvalidFieldDefError(
@@ -102,9 +110,13 @@ export function validateFieldDef(def: unknown): FieldDef {
       const maxLength = obj.maxLength;
       if (
         maxLength !== undefined &&
-        (typeof maxLength !== "number" || !Number.isInteger(maxLength) || maxLength <= 0)
+        (typeof maxLength !== "number" ||
+          !Number.isInteger(maxLength) ||
+          maxLength <= 0)
       ) {
-        throw new InvalidFieldDefError("string.maxLength must be positive integer");
+        throw new InvalidFieldDefError(
+          "string.maxLength must be positive integer",
+        );
       }
       return {
         name,
@@ -122,15 +134,21 @@ export function validateFieldDef(def: unknown): FieldDef {
       const scale = obj.scale;
       if (
         precision !== undefined &&
-        (typeof precision !== "number" || !Number.isInteger(precision) || precision <= 0)
+        (typeof precision !== "number" ||
+          !Number.isInteger(precision) ||
+          precision <= 0)
       ) {
-        throw new InvalidFieldDefError("decimal.precision must be positive integer");
+        throw new InvalidFieldDefError(
+          "decimal.precision must be positive integer",
+        );
       }
       if (
         scale !== undefined &&
         (typeof scale !== "number" || !Number.isInteger(scale) || scale < 0)
       ) {
-        throw new InvalidFieldDefError("decimal.scale must be non-negative integer");
+        throw new InvalidFieldDefError(
+          "decimal.scale must be non-negative integer",
+        );
       }
       if (precision !== undefined && scale !== undefined && scale > precision) {
         throw new InvalidFieldDefError("decimal.scale must be <= precision");
@@ -157,16 +175,22 @@ export function validateFieldDef(def: unknown): FieldDef {
       const stringValues: string[] = [];
       for (const v of values) {
         if (typeof v !== "string" || v.length === 0) {
-          throw new InvalidFieldDefError("enum.values must contain non-empty strings");
+          throw new InvalidFieldDefError(
+            "enum.values must contain non-empty strings",
+          );
         }
         stringValues.push(v);
       }
       const maxLength = obj.maxLength;
       if (
         maxLength !== undefined &&
-        (typeof maxLength !== "number" || !Number.isInteger(maxLength) || maxLength <= 0)
+        (typeof maxLength !== "number" ||
+          !Number.isInteger(maxLength) ||
+          maxLength <= 0)
       ) {
-        throw new InvalidFieldDefError("enum.maxLength must be positive integer");
+        throw new InvalidFieldDefError(
+          "enum.maxLength must be positive integer",
+        );
       }
       return {
         name,
