@@ -10,16 +10,16 @@ export function createPlatformRouter(deps: PlatformRouterDeps): Router {
   const router = Router();
   const handlers = createPlatformHandlers(deps.knex);
 
-  router.post("/entities", handlers.registerEntity);
-  router.get("/entities", handlers.listEntities);
-  router.get("/entities/:name/v/:version", handlers.getEntityVersion);
-  router.get("/entities/:name", handlers.getEntity);
-  router.delete("/entities/:name/v/:version", handlers.deleteEntity);
-  router.post("/data/:entity", handlers.createRecord);
-  router.get("/data/:entity", handlers.listRecords);
-  router.get("/data/:entity/:id", handlers.readRecord);
-  router.patch("/data/:entity/:id", handlers.updateRecord);
-  router.delete("/data/:entity/:id", handlers.deleteRecord);
+  router.post("/platform/entities", handlers.registerEntity);
+  router.get("/platform/entities", handlers.listEntities);
+  router.get("/platform/entities/:name/v/:version", handlers.getEntityVersion);
+  router.get("/platform/entities/:name", handlers.getEntity);
+  router.delete("/platform/entities/:name/v/:version", handlers.deleteEntity);
+  router.post("/platform/data/:entity", handlers.createRecord);
+  router.get("/platform/data/:entity", handlers.listRecords);
+  router.get("/platform/data/:entity/:id", handlers.readRecord);
+  router.patch("/platform/data/:entity/:id", handlers.updateRecord);
+  router.delete("/platform/data/:entity/:id", handlers.deleteRecord);
 
   return router;
 }

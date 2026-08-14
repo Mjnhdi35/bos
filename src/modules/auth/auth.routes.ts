@@ -11,11 +11,11 @@ import {
 export function createAuthRouter(): Router {
   const router = Router();
 
-  router.post("/register", registerHandler);
-  router.post("/login", loginHandler);
-  router.post("/refresh", refreshHandler);
-  router.post("/logout", logoutHandler);
-  router.get("/me", authenticate, meHandler);
+  router.post("/auth/register", registerHandler);
+  router.post("/auth/login", loginHandler);
+  router.post("/auth/refresh", refreshHandler);
+  router.post("/auth/logout", logoutHandler);
+  router.get("/auth/me", authenticate, meHandler);
 
   return router;
 }

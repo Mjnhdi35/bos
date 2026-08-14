@@ -12,10 +12,15 @@ export function createAuthTestApp(): Express {
       next();
     },
   );
-  app.use("/identity", createAuthRouter());
+  app.use(createAuthRouter());
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof HttpError) {
-      res.status(err.status).json({ error: err.code });
+      logger.warn({ err: err.message, status: err.status, code: err.code }, "request failed");
+      if (!res.headersSent) {
+        const body: { error: string; message?: string } = { error: err.code };
+        if (err.message !== err.code) body.message = err.message;
+        res.status(err.status).json(body);
+      }
       return;
     }
     logger.error({ err: err.message, stack: err.stack }, "unhandled error");

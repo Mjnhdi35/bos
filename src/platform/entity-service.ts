@@ -123,66 +123,57 @@ function validateInput(
   for (const f of fields) {
     const value = input[f.name];
     if (f.required && (value === undefined || value === null)) {
-      throw new HttpError(400, `field '${f.name}' is required`);
+      throw new HttpError(400, "invalid_input", `field '${f.name}' is required`);
     }
     if (value === undefined || value === null) continue;
     switch (f.type) {
       case "string":
       case "text":
         if (typeof value !== "string") {
-          throw new HttpError(400, `field '${f.name}' must be string`);
+          throw new HttpError(400, "invalid_input", `field '${f.name}' must be string`);
         }
         break;
       case "number":
         if (typeof value !== "number" || !Number.isFinite(value)) {
-          throw new HttpError(400, `field '${f.name}' must be number`);
+          throw new HttpError(400, "invalid_input", `field '${f.name}' must be number`);
         }
         out[f.name] = Math.trunc(value);
         continue;
       case "decimal":
         if (typeof value !== "number" || !Number.isFinite(value)) {
-          throw new HttpError(
-            400,
-            `field '${f.name}' must be decimal (number)`,
-          );
+          throw new HttpError(400, "invalid_input", `field '${f.name}' must be decimal (number)`);
         }
         break;
       case "boolean":
         if (typeof value !== "boolean") {
-          throw new HttpError(400, `field '${f.name}' must be boolean`);
+          throw new HttpError(400, "invalid_input", `field '${f.name}' must be boolean`);
         }
         break;
       case "timestamp":
         if (typeof value !== "string") {
-          throw new HttpError(400, `field '${f.name}' must be ISO string`);
+          throw new HttpError(400, "invalid_input", `field '${f.name}' must be ISO string`);
         }
         if (Number.isNaN(Date.parse(value))) {
-          throw new HttpError(
-            400,
-            `field '${f.name}' must be valid date string`,
-          );
+          throw new HttpError(400, "invalid_input", `field '${f.name}' must be valid date string`);
         }
         break;
       case "json":
         if (typeof value !== "object") {
-          throw new HttpError(400, `field '${f.name}' must be object`);
+          throw new HttpError(400, "invalid_input", `field '${f.name}' must be object`);
         }
         break;
       case "enum": {
         if (typeof value !== "string") {
-          throw new HttpError(400, `field '${f.name}' must be string`);
+          throw new HttpError(400, "invalid_input", `field '${f.name}' must be string`);
         }
         if (!f.values.includes(value)) {
-          throw new HttpError(
-            400,
-            `field '${f.name}' must be one of [${f.values.join(",")}]`,
-          );
+          throw new HttpError(400, "invalid_input", `field '${f.name}' must be one of [${f.values.join(",")}]`);
         }
         break;
       }
       case "array": {
         if (!Array.isArray(value)) {
-          throw new HttpError(400, `field '${f.name}' must be array`);
+          throw new HttpError(400, "invalid_input", `field '${f.name}' must be array`);
         }
         const rawArr: unknown[] = value;
         const coercedArr: unknown[] = [];
@@ -193,55 +184,37 @@ function validateInput(
             case "string":
             case "text":
               if (typeof item !== "string") {
-                throw new HttpError(
-                  400,
-                  `field '${f.name}${idx}' must be string`,
-                );
+                throw new HttpError(400, "invalid_input", `field '${f.name}${idx}' must be string`);
               }
               coercedArr.push(item);
               break;
             case "number":
               if (typeof item !== "number" || !Number.isFinite(item)) {
-                throw new HttpError(
-                  400,
-                  `field '${f.name}${idx}' must be number`,
-                );
+                throw new HttpError(400, "invalid_input", `field '${f.name}${idx}' must be number`);
               }
               coercedArr.push(Math.trunc(item));
               break;
             case "decimal":
               if (typeof item !== "number" || !Number.isFinite(item)) {
-                throw new HttpError(
-                  400,
-                  `field '${f.name}${idx}' must be decimal (number)`,
-                );
+                throw new HttpError(400, "invalid_input", `field '${f.name}${idx}' must be decimal (number)`);
               }
               coercedArr.push(item);
               break;
             case "boolean":
               if (typeof item !== "boolean") {
-                throw new HttpError(
-                  400,
-                  `field '${f.name}${idx}' must be boolean`,
-                );
+                throw new HttpError(400, "invalid_input", `field '${f.name}${idx}' must be boolean`);
               }
               coercedArr.push(item);
               break;
             case "timestamp":
               if (typeof item !== "string" || Number.isNaN(Date.parse(item))) {
-                throw new HttpError(
-                  400,
-                  `field '${f.name}${idx}' must be valid date string`,
-                );
+                throw new HttpError(400, "invalid_input", `field '${f.name}${idx}' must be valid date string`);
               }
               coercedArr.push(item);
               break;
             case "json":
               if (item === null || typeof item !== "object") {
-                throw new HttpError(
-                  400,
-                  `field '${f.name}${idx}' must be object`,
-                );
+                throw new HttpError(400, "invalid_input", `field '${f.name}${idx}' must be object`);
               }
               coercedArr.push(item);
               break;
@@ -273,53 +246,50 @@ function validatePatch(
       case "string":
       case "text":
         if (typeof v !== "string") {
-          throw new HttpError(400, `field '${k}' must be string`);
+          throw new HttpError(400, "invalid_input", `field '${k}' must be string`);
         }
         break;
       case "number":
         if (typeof v !== "number" || !Number.isFinite(v)) {
-          throw new HttpError(400, `field '${k}' must be number`);
+          throw new HttpError(400, "invalid_input", `field '${k}' must be number`);
         }
         out[k] = Math.trunc(v);
         continue;
       case "decimal":
         if (typeof v !== "number" || !Number.isFinite(v)) {
-          throw new HttpError(400, `field '${k}' must be decimal (number)`);
+          throw new HttpError(400, "invalid_input", `field '${k}' must be decimal (number)`);
         }
         break;
       case "boolean":
         if (typeof v !== "boolean") {
-          throw new HttpError(400, `field '${k}' must be boolean`);
+          throw new HttpError(400, "invalid_input", `field '${k}' must be boolean`);
         }
         break;
       case "timestamp":
         if (typeof v !== "string") {
-          throw new HttpError(400, `field '${k}' must be ISO string`);
+          throw new HttpError(400, "invalid_input", `field '${k}' must be ISO string`);
         }
         if (Number.isNaN(Date.parse(v))) {
-          throw new HttpError(400, `field '${k}' must be valid date string`);
+          throw new HttpError(400, "invalid_input", `field '${k}' must be valid date string`);
         }
         break;
       case "json":
         if (typeof v !== "object") {
-          throw new HttpError(400, `field '${k}' must be object`);
+          throw new HttpError(400, "invalid_input", `field '${k}' must be object`);
         }
         break;
       case "enum": {
         if (typeof v !== "string") {
-          throw new HttpError(400, `field '${k}' must be string`);
+          throw new HttpError(400, "invalid_input", `field '${k}' must be string`);
         }
         if (!f.values.includes(v)) {
-          throw new HttpError(
-            400,
-            `field '${k}' must be one of [${f.values.join(",")}]`,
-          );
+          throw new HttpError(400, "invalid_input", `field '${k}' must be one of [${f.values.join(",")}]`);
         }
         break;
       }
       case "array": {
         if (!Array.isArray(v)) {
-          throw new HttpError(400, `field '${k}' must be array`);
+          throw new HttpError(400, "invalid_input", `field '${k}' must be array`);
         }
         const rawArr: unknown[] = v;
         const coercedArr: unknown[] = [];
@@ -330,43 +300,37 @@ function validatePatch(
             case "string":
             case "text":
               if (typeof item !== "string") {
-                throw new HttpError(400, `field '${k}${idx}' must be string`);
+                throw new HttpError(400, "invalid_input", `field '${k}${idx}' must be string`);
               }
               coercedArr.push(item);
               break;
             case "number":
               if (typeof item !== "number" || !Number.isFinite(item)) {
-                throw new HttpError(400, `field '${k}${idx}' must be number`);
+                throw new HttpError(400, "invalid_input", `field '${k}${idx}' must be number`);
               }
               coercedArr.push(Math.trunc(item));
               break;
             case "decimal":
               if (typeof item !== "number" || !Number.isFinite(item)) {
-                throw new HttpError(
-                  400,
-                  `field '${k}${idx}' must be decimal (number)`,
-                );
+                throw new HttpError(400, "invalid_input", `field '${k}${idx}' must be decimal (number)`);
               }
               coercedArr.push(item);
               break;
             case "boolean":
               if (typeof item !== "boolean") {
-                throw new HttpError(400, `field '${k}${idx}' must be boolean`);
+                throw new HttpError(400, "invalid_input", `field '${k}${idx}' must be boolean`);
               }
               coercedArr.push(item);
               break;
             case "timestamp":
               if (typeof item !== "string" || Number.isNaN(Date.parse(item))) {
-                throw new HttpError(
-                  400,
-                  `field '${k}${idx}' must be valid date string`,
-                );
+                throw new HttpError(400, "invalid_input", `field '${k}${idx}' must be valid date string`);
               }
               coercedArr.push(item);
               break;
             case "json":
               if (item === null || typeof item !== "object") {
-                throw new HttpError(400, `field '${k}${idx}' must be object`);
+                throw new HttpError(400, "invalid_input", `field '${k}${idx}' must be object`);
               }
               coercedArr.push(item);
               break;

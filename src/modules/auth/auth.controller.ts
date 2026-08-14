@@ -1,6 +1,6 @@
 import { type Request, type Response } from "express";
 import { parseBody } from "../../shared/http";
-import { LoginSchema, RefreshSchema, RegisterSchema } from "./auth.schema";
+import { LoginSchema, RegisterSchema } from "./auth.schema";
 import {
   getCurrentUser,
   loginUser,
@@ -8,28 +8,37 @@ import {
   refreshAccessToken,
   registerUser,
 } from "./auth.service";
+import {
+  clearRefreshTokenCookie,
+  readRefreshTokenCookie,
+  setRefreshTokenCookie,
+} from "./auth.cookies";
 
 export async function registerHandler(req: Request, res: Response): Promise<void> {
   const data = parseBody(RegisterSchema, req);
   const result = await registerUser(data);
-  res.status(201).json(result);
+  setRefreshTokenCookie(res, result.refresh_token);
+  res.status(201).json(result.tokenPair);
 }
 
 export async function loginHandler(req: Request, res: Response): Promise<void> {
   const data = parseBody(LoginSchema, req);
   const result = await loginUser(data);
-  res.status(200).json(result);
+  setRefreshTokenCookie(res, result.refresh_token);
+  res.status(200).json(result.tokenPair);
 }
 
 export async function refreshHandler(req: Request, res: Response): Promise<void> {
-  const data = parseBody(RefreshSchema, req);
-  const result = await refreshAccessToken(data.refresh_token);
-  res.status(200).json(result);
+  const refreshToken = readRefreshTokenCookie(req);
+  const result = await refreshAccessToken(refreshToken);
+  setRefreshTokenCookie(res, result.refresh_token);
+  res.status(200).json(result.tokenPair);
 }
 
 export async function logoutHandler(req: Request, res: Response): Promise<void> {
-  const data = parseBody(RefreshSchema, req);
-  await logoutUser(data.refresh_token);
+  const refreshToken = readRefreshTokenCookie(req);
+  await logoutUser(refreshToken);
+  clearRefreshTokenCookie(res);
   res.status(204).end();
 }
 

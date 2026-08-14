@@ -1,4 +1,9 @@
-import express, { type Express, type NextFunction, type Request, type Response } from "express";
+import express, {
+  type Express,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import pinoHttp from "pino-http";
 import { type Logger } from "pino";
 import { db as defaultDb, type Knex } from "../infrastructure/database/knex";
@@ -44,15 +49,20 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     }
   });
 
-  app.use("/users", createUsersRouter());
-  app.use("/identity", createAuthRouter());
-  app.use("/platform", createPlatformRouter({ knex: db }));
+  app.use(createUsersRouter());
+  app.use(createAuthRouter());
+  app.use(createPlatformRouter({ knex: db }));
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof HttpError) {
-      log.warn({ err: err.message, status: err.status, code: err.code }, "request failed");
+      log.warn(
+        { err: err.message, status: err.status, code: err.code },
+        "request failed",
+      );
       if (!res.headersSent) {
-        res.status(err.status).json({ error: err.code });
+        const body: { error: string; message?: string } = { error: err.code };
+        if (err.message !== err.code) body.message = err.message;
+        res.status(err.status).json(body);
       }
       return;
     }

@@ -17,8 +17,10 @@ End-to-end HTTP test collection for the BOS API.
 
 - Open the `BOS API` collection, click `Runner` at the bottom.
 - Pick the environment, click `Run BOS API`.
-- Each request captures `access_token`, `refresh_token`, `product_id` from
-  responses and reuses them in later requests via `pm.environment.set`.
+- The register and login requests capture `access_token` from the response body.
+- The API sets `refresh_token` as an `HttpOnly` cookie. Postman keeps this cookie in
+  its cookie jar and sends it automatically to `/auth/refresh` and `/auth/logout`.
+- The refresh token is not stored in the response body or Postman environment.
 
 ## Run from CLI with newman
 

@@ -15,7 +15,6 @@ const REFRESH_TTL_MS = parseTtl(env.JWT_REFRESH_TTL);
 
 export type TokenPair = {
   access_token: string;
-  refresh_token: string;
   token_type: "Bearer";
   expires_in: number;
 };
@@ -30,10 +29,15 @@ type RefreshTokenRow = {
   revoked_at: Date | null;
 };
 
+export type IssuedTokenPair = {
+  tokenPair: TokenPair;
+  refresh_token: string;
+};
+
 export async function registerUser(input: {
   email: string;
   password: string;
-}): Promise<TokenPair> {
+}): Promise<IssuedTokenPair> {
   const user = await createUser(input);
   return issueTokenPair(user.id);
 }
@@ -41,7 +45,7 @@ export async function registerUser(input: {
 export async function loginUser(input: {
   email: string;
   password: string;
-}): Promise<TokenPair> {
+}): Promise<IssuedTokenPair> {
   const user = await findByEmail(input.email);
   if (!user) throw new HttpError(401, "invalid_credentials");
 
@@ -53,7 +57,7 @@ export async function loginUser(input: {
 
 export async function refreshAccessToken(
   refreshToken: string,
-): Promise<TokenPair> {
+): Promise<IssuedTokenPair> {
   const hash = sha256(refreshToken);
   const record = await db<RefreshTokenRow>("refresh_tokens")
     .where({ token_hash: hash })
@@ -87,7 +91,7 @@ export async function getCurrentUser(userId: string): Promise<CurrentUser> {
   return findById(userId);
 }
 
-async function issueTokenPair(userId: string): Promise<TokenPair> {
+async function issueTokenPair(userId: string): Promise<IssuedTokenPair> {
   const access = await signAccessToken(userId);
   const refreshToken = randomBytes(32).toString("base64url");
   const refreshHash = sha256(refreshToken);
@@ -101,10 +105,12 @@ async function issueTokenPair(userId: string): Promise<TokenPair> {
     Math.floor((access.expiresAt.getTime() - Date.now()) / 1000),
   );
   return {
-    access_token: access.token,
+    tokenPair: {
+      access_token: access.token,
+      token_type: "Bearer",
+      expires_in: expiresIn,
+    },
     refresh_token: refreshToken,
-    token_type: "Bearer",
-    expires_in: expiresIn,
   };
 }
 

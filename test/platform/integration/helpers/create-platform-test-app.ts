@@ -13,10 +13,15 @@ export function createPlatformTestApp(): Express {
       next();
     },
   );
-  app.use("/platform", createPlatformRouter({ knex: db }));
+  app.use(createPlatformRouter({ knex: db }));
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof HttpError) {
-      res.status(err.status).json({ error: err.code });
+      logger.warn({ err: err.message, status: err.status, code: err.code }, "request failed");
+      if (!res.headersSent) {
+        const body: { error: string; message?: string } = { error: err.code };
+        if (err.message !== err.code) body.message = err.message;
+        res.status(err.status).json(body);
+      }
       return;
     }
     logger.error({ err: err.message, stack: err.stack }, "unhandled error");
