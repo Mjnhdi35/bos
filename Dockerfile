@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.8
 
 # ---- Build stage ----
 # Compiles TypeScript to dist/ with full devDependencies.
@@ -10,7 +10,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Copy only what tsc needs to produce dist/.
-COPY tsconfig.json ./
+COPY tsconfig.json tsconfig.build.json ./
 COPY src ./src
 RUN npm run build
 
@@ -22,9 +22,10 @@ ENV NODE_ENV=production
 ENV PORT=3000
 WORKDIR /app
 
-# Install runtime dependencies only.
+# Install runtime dependencies only; Husky is development-only.
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev \
+RUN npm pkg delete scripts.prepare \
+    && npm ci --omit=dev \
     && npm cache clean --force
 
 # Copy compiled artifacts from the builder stage.

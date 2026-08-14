@@ -10,6 +10,22 @@ permissions:
   contents: read
 
 jobs:
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan repository for secrets
+        uses: gitleaks/gitleaks-action@v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_ENABLE_COMMENTS: false
+
   verify:
     name: Verify (typecheck + lint + test + build)
     runs-on: ubuntu-latest
@@ -65,9 +81,9 @@ jobs:
         run: npm run build
 
   docker:
-    name: Docker build
+    name: Docker build and scan
     runs-on: ubuntu-latest
-    needs: verify
+    needs: [verify, secrets]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -75,11 +91,34 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build image
-        uses: docker/build-push-action@v6
+      - name: Validate Docker build configuration
+        uses: docker/build-push-action@v7
         with:
           context: .
+          call: check
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
           push: false
           tags: bos:ci-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify runtime image hardening
+        shell: bash
+        run: |
+          test "$(docker image inspect bos:ci-${{ github.sha }} --format '{{.Config.User}}')" = "node"
+
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: bos:ci-${{ github.sha }}
+          format: table
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+          scanners: vuln
