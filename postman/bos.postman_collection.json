@@ -1,0 +1,205 @@
+{
+  "info": {
+    "name": "BOS API",
+    "_postman_id": "bos-api-collection-v1",
+    "description": "End-to-end HTTP tests for BOS API. Requires a running server with Postgres reachable (default baseUrl http://localhost:3000).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "pm.test('body status=ok', function () { pm.expect(pm.response.json().status).to.eql('ok'); });"] } }]
+        },
+        {
+          "name": "GET /health/db",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/health/db", "host": ["{{baseUrl}}"], "path": ["health", "db"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "pm.test('database connected', function () { pm.expect(pm.response.json().database).to.eql('connected'); });"] } }]
+        }
+      ]
+    },    {
+      "name": "Identity",
+      "item": [
+        {
+          "name": "Set fresh test credentials",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["const ts = Date.now();", "pm.environment.set('test_email', 'bos+' + ts + '@example.com');", "pm.environment.set('other_email', 'other+' + ts + '@example.com');"] } }],
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] } }
+        },
+        {
+          "name": "POST /identity/register (capture tokens)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"{{test_email}}\",\"password\":\"correcthorse\"}" }, "url": { "raw": "{{baseUrl}}/identity/register", "host": ["{{baseUrl}}"], "path": ["identity", "register"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 201', function () { pm.response.to.have.status(201); });", "var b = pm.response.json();", "pm.test('access_token is JWT', function () { pm.expect(b.access_token).to.match(/^eyJ/); });", "pm.test('refresh_token present', function () { pm.expect(b.refresh_token).to.be.a('string').and.not.empty; });", "pm.test('token_type Bearer', function () { pm.expect(b.token_type).to.eql('Bearer'); });", "pm.test('expires_in > 0', function () { pm.expect(b.expires_in).to.be.greaterThan(0); });", "pm.environment.set('access_token', b.access_token);", "pm.environment.set('refresh_token', b.refresh_token);"] } }]
+        },
+        {
+          "name": "POST /identity/register duplicate -> 409",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"{{test_email}}\",\"password\":\"another1\"}" }, "url": { "raw": "{{baseUrl}}/identity/register", "host": ["{{baseUrl}}"], "path": ["identity", "register"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 409', function () { pm.response.to.have.status(409); });", "pm.test('error=email_taken', function () { pm.expect(pm.response.json().error).to.eql('email_taken'); });"] } }]
+        },
+        {
+          "name": "POST /identity/register invalid email -> 400",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"not-an-email\",\"password\":\"correcthorse\"}" }, "url": { "raw": "{{baseUrl}}/identity/register", "host": ["{{baseUrl}}"], "path": ["identity", "register"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 400', function () { pm.response.to.have.status(400); });", "pm.test('error=invalid_request', function () { pm.expect(pm.response.json().error).to.eql('invalid_request'); });"] } }]
+        },
+        {
+          "name": "POST /identity/register short password -> 400",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"{{other_email}}\",\"password\":\"x\"}" }, "url": { "raw": "{{baseUrl}}/identity/register", "host": ["{{baseUrl}}"], "path": ["identity", "register"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 400', function () { pm.response.to.have.status(400); });", "pm.test('error=invalid_request', function () { pm.expect(pm.response.json().error).to.eql('invalid_request'); });", "pm.test('no password leak in body', function () { pm.expect(JSON.stringify(pm.response.json())).not.to.contain('x'); });"] } }]
+        },        {
+          "name": "POST /identity/login (capture tokens)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"{{test_email}}\",\"password\":\"correcthorse\"}" }, "url": { "raw": "{{baseUrl}}/identity/login", "host": ["{{baseUrl}}"], "path": ["identity", "login"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "var b = pm.response.json();", "pm.test('has access_token', function () { pm.expect(b.access_token).to.match(/^eyJ/); });", "pm.test('has refresh_token', function () { pm.expect(b.refresh_token).to.be.a('string').and.not.empty; });", "pm.environment.set('access_token', b.access_token);", "pm.environment.set('refresh_token', b.refresh_token);"] } }]
+        },
+        {
+          "name": "POST /identity/login wrong password -> 401",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"{{test_email}}\",\"password\":\"wrong-password\"}" }, "url": { "raw": "{{baseUrl}}/identity/login", "host": ["{{baseUrl}}"], "path": ["identity", "login"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 401', function () { pm.response.to.have.status(401); });", "pm.test('error=invalid_credentials', function () { pm.expect(pm.response.json().error).to.eql('invalid_credentials'); });"] } }]
+        },
+        {
+          "name": "POST /identity/login unknown email -> 401 (no leak)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"ghost+{{$randomInt}}@example.com\",\"password\":\"correcthorse\"}" }, "url": { "raw": "{{baseUrl}}/identity/login", "host": ["{{baseUrl}}"], "path": ["identity", "login"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 401', function () { pm.response.to.have.status(401); });", "pm.test('error=invalid_credentials', function () { pm.expect(pm.response.json().error).to.eql('invalid_credentials'); });"] } }]
+        },
+        {
+          "name": "GET /identity/me (with access_token)",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }], "url": { "raw": "{{baseUrl}}/identity/me", "host": ["{{baseUrl}}"], "path": ["identity", "me"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "var b = pm.response.json();", "pm.test('id is uuid', function () { pm.expect(b.id).to.match(/^[0-9a-f-]{36}$/); });", "pm.test('email matches', function () { pm.expect(b.email).to.eql(pm.environment.get('test_email')); });", "pm.test('role=user', function () { pm.expect(b.role).to.eql('user'); });"] } }]
+        },
+        {
+          "name": "GET /identity/me no token -> 401",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/identity/me", "host": ["{{baseUrl}}"], "path": ["identity", "me"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 401', function () { pm.response.to.have.status(401); });", "pm.test('error=invalid_token', function () { pm.expect(pm.response.json().error).to.eql('invalid_token'); });"] } }]
+        },
+        {
+          "name": "GET /identity/me bad bearer -> 401",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer not-a-jwt" }], "url": { "raw": "{{baseUrl}}/identity/me", "host": ["{{baseUrl}}"], "path": ["identity", "me"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 401', function () { pm.response.to.have.status(401); });", "pm.test('error=invalid_token', function () { pm.expect(pm.response.json().error).to.eql('invalid_token'); });"] } }]
+        },        {
+          "name": "POST /identity/refresh (rotate tokens)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"refresh_token\":\"{{refresh_token}}\"}" }, "url": { "raw": "{{baseUrl}}/identity/refresh", "host": ["{{baseUrl}}"], "path": ["identity", "refresh"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "var b = pm.response.json();", "pm.test('new access_token', function () { pm.expect(b.access_token).to.match(/^eyJ/); });", "pm.test('new refresh_token differs', function () { pm.expect(b.refresh_token).to.not.eql(pm.environment.get('refresh_token')); });", "pm.environment.set('access_token', b.access_token);", "pm.environment.set('refresh_token', b.refresh_token);"] } }]
+        },
+        {
+          "name": "POST /identity/refresh unknown -> 401",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"refresh_token\":\"this-token-does-not-exist\"}" }, "url": { "raw": "{{baseUrl}}/identity/refresh", "host": ["{{baseUrl}}"], "path": ["identity", "refresh"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 401', function () { pm.response.to.have.status(401); });", "pm.test('error=invalid_token', function () { pm.expect(pm.response.json().error).to.eql('invalid_token'); });"] } }]
+        },
+        {
+          "name": "POST /identity/logout",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"refresh_token\":\"{{refresh_token}}\"}" }, "url": { "raw": "{{baseUrl}}/identity/logout", "host": ["{{baseUrl}}"], "path": ["identity", "logout"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 204', function () { pm.response.to.have.status(204); });"] } }]
+        }
+      ]
+    },    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Set fresh user email",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.environment.set('users_email', 'users+' + Date.now() + '@example.com');"] } }],
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] } }
+        },
+        {
+          "name": "POST /users (happy path)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"{{users_email}}\",\"password\":\"correcthorse\"}" }, "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 201', function () { pm.response.to.have.status(201); });", "var b = pm.response.json();", "pm.test('id is uuid', function () { pm.expect(b.id).to.match(/^[0-9a-f-]{36}$/); });", "pm.test('email matches', function () { pm.expect(b.email).to.eql(pm.environment.get('users_email')); });", "pm.test('createdAt present', function () { pm.expect(b.createdAt).to.be.a('string'); });", "pm.test('updatedAt present', function () { pm.expect(b.updatedAt).to.be.a('string'); });", "pm.test('no password_hash', function () { pm.expect(b.password_hash).to.be.undefined; });", "pm.test('no password', function () { pm.expect(b.password).to.be.undefined; });"] } }]
+        },
+        {
+          "name": "POST /users duplicate -> 409",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"{{users_email}}\",\"password\":\"different1\"}" }, "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 409', function () { pm.response.to.have.status(409); });", "pm.test('error=email_taken', function () { pm.expect(pm.response.json().error).to.eql('email_taken'); });"] } }]
+        },
+        {
+          "name": "POST /users invalid email -> 400",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"not-an-email\",\"password\":\"correcthorse\"}" }, "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 400', function () { pm.response.to.have.status(400); });", "pm.test('error=invalid_request', function () { pm.expect(pm.response.json().error).to.eql('invalid_request'); });"] } }]
+        },
+        {
+          "name": "POST /users normalize email -> 201",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"  MIXED.{{$randomInt}}@EXAMPLE.com  \",\"password\":\"correcthorse\"}" }, "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 201', function () { pm.response.to.have.status(201); });", "pm.test('email is lowercased + trimmed', function () { var b = pm.response.json(); pm.expect(b.email).to.match(/^mixed\\.\\d+@example\\.com$/); });"] } }]
+        }
+      ]
+    },    {
+      "name": "Platform - Entities",
+      "item": [
+        {
+          "name": "POST /platform/entities (register products)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"products\",\"version\":1,\"fields\":[{\"name\":\"title\",\"type\":\"string\",\"required\":true,\"maxLength\":120},{\"name\":\"price\",\"type\":\"decimal\",\"required\":true,\"precision\":18,\"scale\":4},{\"name\":\"active\",\"type\":\"boolean\",\"required\":false}]}" }, "url": { "raw": "{{baseUrl}}/platform/entities", "host": ["{{baseUrl}}"], "path": ["platform", "entities"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 201', function () { pm.response.to.have.status(201); });", "var b = pm.response.json();", "pm.test('name=products', function () { pm.expect(b.name).to.eql('products'); });", "pm.test('version=1', function () { pm.expect(b.version).to.eql(1); });", "pm.test('fields array length=3', function () { pm.expect(b.fields).to.be.an('array').with.length(3); });"] } }]
+        },
+        {
+          "name": "POST /platform/entities invalid name -> 400",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"name\":\"Bad Name\",\"version\":1,\"fields\":[{\"name\":\"x\",\"type\":\"string\",\"required\":true}]}" }, "url": { "raw": "{{baseUrl}}/platform/entities", "host": ["{{baseUrl}}"], "path": ["platform", "entities"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 400', function () { pm.response.to.have.status(400); });", "pm.test('error=invalid_definition', function () { pm.expect(pm.response.json().error).to.eql('invalid_definition'); });"] } }]
+        },
+        {
+          "name": "GET /platform/entities (list)",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/platform/entities", "host": ["{{baseUrl}}"], "path": ["platform", "entities"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "pm.test('has entities array', function () { pm.expect(pm.response.json().entities).to.be.an('array'); });"] } }]
+        },
+        {
+          "name": "GET /platform/entities/products",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/platform/entities/products", "host": ["{{baseUrl}}"], "path": ["platform", "entities", "products"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "var b = pm.response.json();", "pm.test('name=products', function () { pm.expect(b.name).to.eql('products'); });", "pm.test('is_system boolean', function () { pm.expect(b.is_system).to.be.a('boolean'); });"] } }]
+        },
+        {
+          "name": "GET /platform/entities/products/v/1",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/platform/entities/products/v/1", "host": ["{{baseUrl}}"], "path": ["platform", "entities", "products", "v", "1"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "pm.test('version=1', function () { pm.expect(pm.response.json().version).to.eql(1); });"] } }]
+        },
+        {
+          "name": "GET /platform/entities/ghost -> 404",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/platform/entities/ghost", "host": ["{{baseUrl}}"], "path": ["platform", "entities", "ghost"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 404', function () { pm.response.to.have.status(404); });", "pm.test('error=entity_not_found', function () { pm.expect(pm.response.json().error).to.eql('entity_not_found'); });"] } }]
+        }
+      ]
+    },    {
+      "name": "Platform - Data",
+      "item": [
+        {
+          "name": "POST /platform/data/products (create record, capture id)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"title\":\"Mango Smoothie\",\"price\":4.5,\"active\":true}" }, "url": { "raw": "{{baseUrl}}/platform/data/products", "host": ["{{baseUrl}}"], "path": ["platform", "data", "products"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 201', function () { pm.response.to.have.status(201); });", "var b = pm.response.json();", "pm.test('id is uuid', function () { pm.expect(b.id).to.match(/^[0-9a-f-]{36}$/); });", "pm.test('title matches', function () { pm.expect(b.title).to.eql('Mango Smoothie'); });", "pm.environment.set('product_id', b.id);"] } }]
+        },
+        {
+          "name": "POST /platform/data/products missing required -> 400",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"price\":4.5}" }, "url": { "raw": "{{baseUrl}}/platform/data/products", "host": ["{{baseUrl}}"], "path": ["platform", "data", "products"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 400', function () { pm.response.to.have.status(400); });", "pm.test('error=invalid_input', function () { pm.expect(pm.response.json().error).to.eql('invalid_input'); });"] } }]
+        },
+        {
+          "name": "GET /platform/data/products (list with pagination)",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/platform/data/products?limit=10&offset=0", "host": ["{{baseUrl}}"], "path": ["platform", "data", "products"], "query": [{ "key": "limit", "value": "10" }, { "key": "offset", "value": "0" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "var b = pm.response.json();", "pm.test('records array', function () { pm.expect(b.records).to.be.an('array'); });", "pm.test('limit echoed', function () { pm.expect(b.limit).to.eql(10); });", "pm.test('offset echoed', function () { pm.expect(b.offset).to.eql(0); });"] } }]
+        },
+        {
+          "name": "GET /platform/data/products/:id",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/platform/data/products/{{product_id}}", "host": ["{{baseUrl}}"], "path": ["platform", "data", "products", "{{product_id}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "pm.test('id matches', function () { pm.expect(pm.response.json().id).to.eql(pm.environment.get('product_id')); });"] } }]
+        },
+        {
+          "name": "PATCH /platform/data/products/:id",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"price\":5.25}" }, "url": { "raw": "{{baseUrl}}/platform/data/products/{{product_id}}", "host": ["{{baseUrl}}"], "path": ["platform", "data", "products", "{{product_id}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "pm.test('price updated', function () { pm.expect(pm.response.json().price).to.eql(5.25); });"] } }]
+        },
+        {
+          "name": "GET /platform/data/products/ghost -> 404",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/platform/data/products/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["platform", "data", "products", "00000000-0000-0000-0000-000000000000"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 404', function () { pm.response.to.have.status(404); });", "pm.test('error=not_found', function () { pm.expect(pm.response.json().error).to.eql('not_found'); });"] } }]
+        },
+        {
+          "name": "DELETE /platform/data/products/:id",
+          "request": { "method": "DELETE", "header": [], "url": { "raw": "{{baseUrl}}/platform/data/products/{{product_id}}", "host": ["{{baseUrl}}"], "path": ["platform", "data", "products", "{{product_id}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 204', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "DELETE /platform/entities/products/v/1 (cleanup)",
+          "request": { "method": "DELETE", "header": [], "url": { "raw": "{{baseUrl}}/platform/entities/products/v/1", "host": ["{{baseUrl}}"], "path": ["platform", "entities", "products", "v", "1"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 204', function () { pm.response.to.have.status(204); });"] } }]
+        }
+      ]
+    }
+  ],
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:3000", "type": "string" }]
+}
