@@ -1,4 +1,5 @@
 import { type Request, type Response } from "express";
+import { parseBody } from "../../shared/http";
 import { LoginSchema, RefreshSchema, RegisterSchema } from "./auth.schema";
 import {
   getCurrentUser,
@@ -9,42 +10,26 @@ import {
 } from "./auth.service";
 
 export async function registerHandler(req: Request, res: Response): Promise<void> {
-  const parsed = RegisterSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "invalid_request" });
-    return;
-  }
-  const result = await registerUser(parsed.data);
+  const data = parseBody(RegisterSchema, req);
+  const result = await registerUser(data);
   res.status(201).json(result);
 }
 
 export async function loginHandler(req: Request, res: Response): Promise<void> {
-  const parsed = LoginSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "invalid_request" });
-    return;
-  }
-  const result = await loginUser(parsed.data);
+  const data = parseBody(LoginSchema, req);
+  const result = await loginUser(data);
   res.status(200).json(result);
 }
 
 export async function refreshHandler(req: Request, res: Response): Promise<void> {
-  const parsed = RefreshSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "invalid_request" });
-    return;
-  }
-  const result = await refreshAccessToken(parsed.data.refresh_token);
+  const data = parseBody(RefreshSchema, req);
+  const result = await refreshAccessToken(data.refresh_token);
   res.status(200).json(result);
 }
 
 export async function logoutHandler(req: Request, res: Response): Promise<void> {
-  const parsed = RefreshSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "invalid_request" });
-    return;
-  }
-  await logoutUser(parsed.data.refresh_token);
+  const data = parseBody(RefreshSchema, req);
+  await logoutUser(data.refresh_token);
   res.status(204).end();
 }
 

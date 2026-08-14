@@ -1,9 +1,15 @@
 import { createHash, randomBytes } from "node:crypto";
 import { db } from "../../infrastructure/database/knex";
-import { hashPassword, verifyPassword } from "../../shared/bcrypt";
+import { verifyPassword } from "../../shared/bcrypt";
 import { signAccessToken, parseTtl } from "../../shared/jwt";
 import { env } from "../../shared/config/env";
 import { HttpError } from "../../shared/errors";
+import {
+  createUser,
+  findByEmail,
+  findById,
+  type User,
+} from "../users/users.service";
 
 const REFRESH_TTL_MS = parseTtl(env.JWT_REFRESH_TTL);
 
@@ -14,20 +20,7 @@ export type TokenPair = {
   expires_in: number;
 };
 
-export type CurrentUser = {
-  id: string;
-  email: string;
-  role: "user" | "admin";
-  createdAt: string;
-};
-
-type UserRow = {
-  id: string;
-  email: string;
-  password_hash: string;
-  role: "user" | "admin";
-  created_at: Date;
-};
+export type CurrentUser = User;
 
 type RefreshTokenRow = {
   id: string;
@@ -41,17 +34,7 @@ export async function registerUser(input: {
   email: string;
   password: string;
 }): Promise<TokenPair> {
-  const existing = await db<UserRow>("users")
-    .where({ email: input.email })
-    .first();
-  if (existing) throw new HttpError(409, "email_taken");
-
-  const passwordHash = await hashPassword(input.password);
-  const [user] = await db<UserRow>("users")
-    .insert({ email: input.email, password_hash: passwordHash, role: "user" })
-    .returning("id");
-  if (!user) throw new Error("user insert returned no row");
-
+  const user = await createUser(input);
   return issueTokenPair(user.id);
 }
 
@@ -59,10 +42,10 @@ export async function loginUser(input: {
   email: string;
   password: string;
 }): Promise<TokenPair> {
-  const user = await db<UserRow>("users").where({ email: input.email }).first();
+  const user = await findByEmail(input.email);
   if (!user) throw new HttpError(401, "invalid_credentials");
 
-  const ok = await verifyPassword(input.password, user.password_hash);
+  const ok = await verifyPassword(input.password, user.passwordHash);
   if (!ok) throw new HttpError(401, "invalid_credentials");
 
   return issueTokenPair(user.id);
@@ -101,14 +84,7 @@ export async function logoutUser(refreshToken: string): Promise<void> {
 }
 
 export async function getCurrentUser(userId: string): Promise<CurrentUser> {
-  const user = await db<UserRow>("users").where({ id: userId }).first();
-  if (!user) throw new HttpError(401, "invalid_token");
-  return {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    createdAt: user.created_at.toISOString(),
-  };
+  return findById(userId);
 }
 
 async function issueTokenPair(userId: string): Promise<TokenPair> {

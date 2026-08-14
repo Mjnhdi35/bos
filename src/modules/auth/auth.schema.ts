@@ -1,11 +1,8 @@
-﻿import { z } from "zod";
+import { z } from "zod";
+import { CredentialSchema } from "../../shared/credential";
 
-export const RegisterSchema = z.object({
-  email: z.email().max(255).transform((s) => s.trim().toLowerCase()),
-  password: z.string().min(8).max(72),
-});
-
-export const LoginSchema = RegisterSchema;
+export const RegisterSchema = CredentialSchema;
+export const LoginSchema = CredentialSchema;
 
 export const RefreshSchema = z.object({
   refresh_token: z.string().min(1),
