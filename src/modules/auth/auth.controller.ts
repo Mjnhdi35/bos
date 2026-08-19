@@ -1,52 +1,50 @@
 import { type Request, type Response } from "express";
+import { HttpError } from "../../shared/errors";
 import { parseBody } from "../../shared/http";
+import type { AuthRuntime } from "./auth.runtime";
 import { LoginSchema, RegisterSchema } from "./auth.schema";
-import {
-  getCurrentUser,
-  loginUser,
-  logoutUser,
-  refreshAccessToken,
-  registerUser,
-} from "./auth.service";
 import {
   clearRefreshTokenCookie,
   readRefreshTokenCookie,
   setRefreshTokenCookie,
 } from "./auth.cookies";
 
-export async function registerHandler(req: Request, res: Response): Promise<void> {
-  const data = parseBody(RegisterSchema, req);
-  const result = await registerUser(data);
-  setRefreshTokenCookie(res, result.refresh_token);
-  res.status(201).json(result.tokenPair);
-}
+export type AuthControllerDeps = {
+  readonly auth: AuthRuntime;
+};
 
-export async function loginHandler(req: Request, res: Response): Promise<void> {
-  const data = parseBody(LoginSchema, req);
-  const result = await loginUser(data);
-  setRefreshTokenCookie(res, result.refresh_token);
-  res.status(200).json(result.tokenPair);
-}
-
-export async function refreshHandler(req: Request, res: Response): Promise<void> {
-  const refreshToken = readRefreshTokenCookie(req);
-  const result = await refreshAccessToken(refreshToken);
-  setRefreshTokenCookie(res, result.refresh_token);
-  res.status(200).json(result.tokenPair);
-}
-
-export async function logoutHandler(req: Request, res: Response): Promise<void> {
-  const refreshToken = readRefreshTokenCookie(req);
-  await logoutUser(refreshToken);
-  clearRefreshTokenCookie(res);
-  res.status(204).end();
-}
-
-export async function meHandler(req: Request, res: Response): Promise<void> {
-  if (!req.user) {
-    res.status(401).json({ error: "invalid_token" });
-    return;
-  }
-  const view = await getCurrentUser(req.user.id);
-  res.status(200).json(view);
+export function createAuthController(deps: AuthControllerDeps) {
+  return {
+    registerHandler: async (req: Request, res: Response): Promise<void> => {
+      const data = parseBody(RegisterSchema, req);
+      const result = await deps.auth.register(data);
+      setRefreshTokenCookie(res, result.refresh_token);
+      res.status(201).json(result.tokenPair);
+    },
+    loginHandler: async (req: Request, res: Response): Promise<void> => {
+      const data = parseBody(LoginSchema, req);
+      const result = await deps.auth.login(data);
+      setRefreshTokenCookie(res, result.refresh_token);
+      res.status(200).json(result.tokenPair);
+    },
+    refreshHandler: async (req: Request, res: Response): Promise<void> => {
+      const refreshToken = readRefreshTokenCookie(req);
+      const result = await deps.auth.refresh(refreshToken);
+      setRefreshTokenCookie(res, result.refresh_token);
+      res.status(200).json(result.tokenPair);
+    },
+    logoutHandler: async (req: Request, res: Response): Promise<void> => {
+      const refreshToken = readRefreshTokenCookie(req);
+      await deps.auth.logout(refreshToken);
+      clearRefreshTokenCookie(res);
+      res.status(204).end();
+    },
+    meHandler: async (req: Request, res: Response): Promise<void> => {
+      if (!req.user) {
+        throw new HttpError(401, "invalid_token");
+      }
+      const view = await deps.auth.getCurrentUser(req.user.id);
+      res.status(200).json(view);
+    },
+  };
 }

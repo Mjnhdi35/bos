@@ -19,9 +19,6 @@
     "test": "vitest run --config vitest.config.mts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "db:migrate:make": "tsx --env-file-if-exists=.env ./node_modules/knex/bin/cli.js --knexfile src/infrastructure/database/config.ts migrate:make",
-    "db:migrate": "tsx --env-file-if-exists=.env ./node_modules/knex/bin/cli.js --knexfile src/infrastructure/database/config.ts migrate:latest",
-    "db:rollback": "tsx --env-file-if-exists=.env ./node_modules/knex/bin/cli.js --knexfile src/infrastructure/database/config.ts migrate:rollback",
     "prepare": "husky"
   },
   "lint-staged": {

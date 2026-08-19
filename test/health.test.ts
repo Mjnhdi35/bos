@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import request from "supertest";
-import { createApp } from "../src/app/create-app";
-import { type Knex } from "../src/infrastructure/database/knex";
+import { createApp, buildRuntime, type AppRuntime } from "../src/app/create-app";
 
 function makeChainable(): unknown {
   const fn = (): unknown => makeChainable();
@@ -26,9 +25,9 @@ function makeChainable(): unknown {
   return obj;
 }
 
-function makeStubDb(opts: {
+function makeStubKnex(opts: {
   rawImpl?: (..._args: unknown[]) => unknown;
-} = {}): Knex {
+} = {}): unknown {
   const stub: Record<string, unknown> = {
     fn: { now: (): Date => new Date() },
     raw: opts.rawImpl ?? ((): { rows: unknown[] } => ({ rows: [] })),
@@ -48,19 +47,28 @@ function makeStubDb(opts: {
       if (typeof prop === "string" && prop in t) {
         return t[prop];
       }
-      // any unknown method/property returns a chainable thenable
       return makeChainable();
     },
   };
-  return new Proxy(target, handler) as unknown as Knex;
+  return new Proxy(target, handler);
+}
+
+async function makeRuntimeWithKnex(rawImpl?: (..._args: unknown[]) => unknown): Promise<AppRuntime> {
+  const rt = await buildRuntime();
+  const stubKnex = makeStubKnex(rawImpl ? { rawImpl } : {});
+  return {
+    ...rt,
+    persistence: {
+      kind: "postgres",
+      knex: stubKnex as never,
+      repository: rt.persistence?.repository ?? (undefined as never),
+    },
+  };
 }
 
 describe("GET /health", () => {
   it("returns ok status", async () => {
-    const app = await createApp({
-      db: makeStubDb(),
-      snapshotPath: "/nonexistent.json",
-    });
+    const app = await createApp({ runtime: await buildRuntime() });
     const response = await request(app).get("/health").expect(200);
     expect(response.body).toEqual({ status: "ok" });
   });
@@ -69,12 +77,9 @@ describe("GET /health", () => {
 describe("GET /health/db", () => {
   it("returns 200 when DB is reachable", async () => {
     const raw = vi.fn().mockResolvedValueOnce({ rows: [{ "?column?": 1 }] });
-    const app = await createApp({
-      db: makeStubDb({ rawImpl: raw }),
-      snapshotPath: "/nonexistent.json",
-    });
+    const app = await createApp({ runtime: await makeRuntimeWithKnex(raw) });
     const response = await request(app).get("/health/db").expect(200);
-    expect(response.body).toEqual({ status: "ok", database: "connected" });
+    expect(response.body).toEqual({ status: "ok", database: "postgres" });
     expect(raw).toHaveBeenCalledWith("SELECT 1");
   });
 
@@ -82,11 +87,8 @@ describe("GET /health/db", () => {
     const raw = vi
       .fn()
       .mockRejectedValueOnce(new Error("connection refused"));
-    const app = await createApp({
-      db: makeStubDb({ rawImpl: raw }),
-      snapshotPath: "/nonexistent.json",
-    });
+    const app = await createApp({ runtime: await makeRuntimeWithKnex(raw) });
     const response = await request(app).get("/health/db").expect(503);
-    expect(response.body).toEqual({ status: "error", database: "unreachable" });
+    expect(response.body).toEqual({ status: "error", database: "postgres" });
   });
 });

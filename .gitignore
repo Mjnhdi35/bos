@@ -88,6 +88,10 @@ web_modules/
 # Optional stylelint cache
 .stylelintcache
 
+# Engineering control plane (recoverable artefacts, scripts, backups)
+.engineering/
+bootstrap/
+
 # Optional REPL history
 .node_repl_history
 

@@ -2,11 +2,24 @@ import { z } from "zod";
 
 const EnvSchema = z.object({
   PORT: z.coerce.number().int().positive().max(65535).default(3000),
+
+  DATABASE: z
+    .enum(["inmemory", "postgres", "mysql"])
+    .default("inmemory"),
+
   DB_HOST: z.string().default("localhost"),
   DB_PORT: z.coerce.number().int().positive().max(65535).default(5432),
   DB_NAME: z.string().default("bos"),
   DB_USER: z.string().default("bos"),
   DB_PASSWORD: z.string().default(""),
+
+  MYSQL_HOST: z.string().default("localhost"),
+  MYSQL_PORT: z.coerce.number().int().positive().max(65535).default(3306),
+  MYSQL_DATABASE: z.string().default("bos"),
+  MYSQL_USER: z.string().default("bos"),
+  MYSQL_PASSWORD: z.string().default(""),
+  MYSQL_ROOT_PASSWORD: z.string().default(""),
+
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
@@ -24,10 +37,8 @@ const EnvSchema = z.object({
 const parsed = EnvSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  // eslint-disable-next-line no-console
-  console.error(
-    "Invalid environment variables:",
-    JSON.stringify(z.treeifyError(parsed.error), null, 2),
+  process.stderr.write(
+    `Invalid environment variables: ${JSON.stringify(z.treeifyError(parsed.error), null, 2)}\n`,
   );
   process.exit(1);
 }

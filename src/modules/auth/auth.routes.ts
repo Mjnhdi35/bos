@@ -1,21 +1,18 @@
 import { Router } from "express";
-import { authenticate } from "./auth.middleware";
-import {
-  loginHandler,
-  logoutHandler,
-  meHandler,
-  refreshHandler,
-  registerHandler,
-} from "./auth.controller";
+import type { AuthRuntime } from "./auth.runtime";
+import { createAuthController } from "./auth.controller";
+import { createAuthMiddleware } from "./auth.middleware";
 
-export function createAuthRouter(): Router {
+export function createAuthRouter(auth: AuthRuntime): Router {
   const router = Router();
+  const ctl = createAuthController({ auth });
+  const mw = createAuthMiddleware(auth);
 
-  router.post("/auth/register", registerHandler);
-  router.post("/auth/login", loginHandler);
-  router.post("/auth/refresh", refreshHandler);
-  router.post("/auth/logout", logoutHandler);
-  router.get("/auth/me", authenticate, meHandler);
+  router.post("/auth/register", ctl.registerHandler);
+  router.post("/auth/login", ctl.loginHandler);
+  router.post("/auth/refresh", ctl.refreshHandler);
+  router.post("/auth/logout", ctl.logoutHandler);
+  router.get("/auth/me", mw.authenticate, ctl.meHandler);
 
   return router;
 }
